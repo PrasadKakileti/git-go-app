@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobHub - Dashboard</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">🎯 JobHub</h1>
+            <div class="nav-right">
+                <span id="userEmail" class="user-email"></span>
+                <button onclick="logout()" class="btn-logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h2>Available Jobs</h2>
+            <p>Jobs matching your preferences</p>
+        </div>
+
+        <div id="loading" class="loading">Loading jobs...</div>
+        <div id="error" class="error" style="display:none;"></div>
+        <div id="jobsContainer" class="jobs-container"></div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>

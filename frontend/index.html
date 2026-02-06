@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobHub - Your Career Companion</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">💼</span>
+                <span class="logo-text">JobHub</span>
+            </div>
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#features">Features</a>
+                <a href="#register">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Find Your Dream Job</h1>
+            <p class="hero-subtitle">Get the latest job opportunities delivered directly to your inbox</p>
+            <a href="#register" class="cta-button">Start Now - It's Free</a>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-item">
+                <div class="stat-number" id="jobCount">1000+</div>
+                <div class="stat-label">Jobs Daily</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Cities</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Updates</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features-section">
+        <h2 class="section-title">Why Choose JobHub?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔔</div>
+                <h3>Smart Notifications</h3>
+                <p>Get personalized job alerts based on your preferences</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📍</div>
+                <h3>Location Based</h3>
+                <p>Filter jobs by your preferred city or location</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Real-Time Updates</h3>
+                <p>Fresh job listings updated every 6 hours</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📧</div>
+                <h3>Email Delivery</h3>
+                <p>Receive curated job lists directly in your inbox</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>No Spam</h3>
+                <p>Only relevant jobs matching your criteria</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Secure & Private</h3>
+                <p>Your data is safe and never shared</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="register" class="register-section">
+        <div class="register-container">
+            <div class="register-info">
+                <h2>Start Your Job Search Today</h2>
+                <p>Join thousands of job seekers who trust JobHub</p>
+                <ul class="benefits-list">
+                    <li>✓ Free forever</li>
+                    <li>✓ No credit card required</li>
+                    <li>✓ Unsubscribe anytime</li>
+                    <li>✓ Daily or weekly updates</li>
+                </ul>
+            </div>
+            <div class="register-form-wrapper">
+                <form id="registerForm" class="register-form">
+                    <h3>Create Your Alert</h3>
+                    
+                    <div class="form-group">
+                        <label for="email">
+                            <span class="label-icon">📧</span>
+                            Email Address
+                        </label>
+                        <input type="email" id="email" name="email" required 
+                               placeholder="your.email@example.com" autocomplete="email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="location">
+                            <span class="label-icon">📍</span>
+                            Preferred Location
+                        </label>
+                        <select id="location" name="location" required>
+                            <option value="">Select a city</option>
+                            <option value="Bangalore">Bangalore</option>
+                            <option value="Mumbai">Mumbai</option>
+                            <option value="Delhi">Delhi</option>
+                            <option value="Hyderabad">Hyderabad</option>
+                            <option value="Pune">Pune</option>
+                            <option value="Chennai">Chennai</option>
+                            <option value="Kolkata">Kolkata</option>
+                            <option value="Ahmedabad">Ahmedabad</option>
+                            <option value="Gurgaon">Gurgaon</option>
+                            <option value="Noida">Noida</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="domain">
+                            <span class="label-icon">💼</span>
+                            Job Domain
+                        </label>
+                        <select id="domain" name="domain" required>
+                            <option value="">Select your domain</option>
+                            <option value="Chartered Accountant">Chartered Accountant</option>
+                            <option value="Java">Java</option>
+                            <option value="Golang">Golang</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="frequency">
+                            <span class="label-icon">⏰</span>
+                            Notification Frequency
+                        </label>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="frequency" value="daily" checked>
+                                <span class="radio-label">
+                                    <strong>Daily</strong>
+                                    <small>Get updates every morning</small>
+                                </span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="frequency" value="weekly">
+                                <span class="radio-label">
+                                    <strong>Weekly</strong>
+                                    <small>Get updates every Monday</small>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">Start Receiving Jobs</span>
+                        <span class="btn-icon">→</span>
+                    </button>
+
+                    <div id="message" class="message"></div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>JobHub</h4>
+                <p>Your trusted job search companion</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="#home">Home</a>
+                <a href="#features">Features</a>
+                <a href="#register">Register</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>support@jobhub.com</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 JobHub. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

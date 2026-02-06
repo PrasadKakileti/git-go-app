@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - JobHub</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f3f4f6;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #6366f1;
+        }
+        .stat-label {
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #6366f1;
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        tr:hover {
+            background: #f9fafb;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .badge-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-daily {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-weekly {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+        .refresh-btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .refresh-btn:hover {
+            background: #4f46e5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👥 Admin Dashboard</h1>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalUsers">-</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="dailyUsers">-</div>
+                <div class="stat-label">Daily Alerts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="weeklyUsers">-</div>
+                <div class="stat-label">Weekly Alerts</div>
+            </div>
+        </div>
+
+        <button class="refresh-btn" onclick="loadUsers()">🔄 Refresh</button>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Location</th>
+                        <th>Domain</th>
+                        <th>Frequency</th>
+                        <th>Status</th>
+                        <th>Registered</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTable">
+                    <tr>
+                        <td colspan="7" class="loading">Loading users...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                
+                document.getElementById('totalUsers').textContent = data.total;
+                
+                const daily = data.users.filter(u => u.notification_frequency === 'daily').length;
+                const weekly = data.users.filter(u => u.notification_frequency === 'weekly').length;
+                
+                document.getElementById('dailyUsers').textContent = daily;
+                document.getElementById('weeklyUsers').textContent = weekly;
+                
+                const tbody = document.getElementById('usersTable');
+                tbody.innerHTML = '';
+                
+                if (data.users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="loading">No users registered yet</td></tr>';
+                    return;
+                }
+                
+                data.users.forEach(user => {
+                    const row = document.createElement('tr');
+                    const date = new Date(user.created_at).toLocaleString();
+                    
+                    row.innerHTML = `
+                        <td>${user.id}</td>
+                        <td>${user.email}</td>
+                        <td>${user.location}</td>
+                        <td><span class="badge badge-daily">${user.domain || 'N/A'}</span></td>
+                        <td><span class="badge badge-${user.notification_frequency}">${user.notification_frequency}</span></td>
+                        <td><span class="badge badge-active">${user.is_active ? 'Active' : 'Inactive'}</span></td>
+                        <td>${date}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                document.getElementById('usersTable').innerHTML = 
+                    '<tr><td colspan="7" class="loading">Error loading users</td></tr>';
+            }
+        }
+        
+        loadUsers();
+        setInterval(loadUsers, 30000); // Auto-refresh every 30 seconds
+    </script>
+</body>
+</html>
