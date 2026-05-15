@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile — JobHub</title>
+    <link rel="stylesheet" href="/css/auth.css">
+    <style>
+        .back-link { display:inline-block; margin-bottom:16px; color:#4f46e5; text-decoration:none; font-size:14px; }
+        .back-link:hover { text-decoration:underline; }
+        .profile-info { font-size:13px; color:#6b7280; margin-bottom:4px; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="logo">🎯 JobHub</div>
+            <a href="/dashboard.html" class="back-link">← Back to Dashboard</a>
+            <h2>My Profile</h2>
+            <p class="subtitle">Update your job preferences below</p>
+            <p id="currentEmail" class="profile-info"></p>
+
+            <form id="profileForm">
+                <div class="form-group">
+                    <label>Preferred Location</label>
+                    <select id="location" required>
+                        <option value="">Select city</option>
+                        <option value="Bangalore">Bangalore</option>
+                        <option value="Hyderabad">Hyderabad</option>
+                        <option value="Pune">Pune</option>
+                        <option value="Mumbai">Mumbai</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Chennai">Chennai</option>
+                        <option value="Noida">Noida</option>
+                        <option value="Gurgaon">Gurgaon</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Domain / Technology</label>
+                    <select id="domain" required>
+                        <option value="">Select domain</option>
+                        <option value="Java">Java</option>
+                        <option value="Node.js">Node.js</option>
+                        <option value="PLM Teamcenter">PLM Teamcenter</option>
+                        <option value="OPcenter">OPcenter</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Experience</label>
+                    <select id="experience" required>
+                        <option value="">Select experience</option>
+                        <option value="0-1">0–1 years (Fresher)</option>
+                        <option value="1-3">1–3 years</option>
+                        <option value="3-5">3–5 years</option>
+                        <option value="5-10">5–10 years</option>
+                        <option value="10+">10+ years</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Notification Frequency</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="frequency" value="daily" checked> Daily</label>
+                        <label><input type="radio" name="frequency" value="weekly"> Weekly</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Save &amp; Fetch New Jobs</button>
+            </form>
+
+            <div id="message" class="message"></div>
+        </div>
+    </div>
+
+    <script>
+    const email = localStorage.getItem('userEmail');
+    if (!email) { window.location.href = '/login.html'; }
+    document.getElementById('currentEmail').textContent = '📧 ' + email;
+
+    // Pre-fill current preferences from the server
+    async function loadProfile() {
+        try {
+            const res = await fetch(`/api/user?email=${encodeURIComponent(email)}`);
+            if (!res.ok) return;
+            const user = await res.json();
+            setSelect('location', user.location);
+            setSelect('domain', user.domain);
+            setSelect('experience', user.experience);
+            const radios = document.querySelectorAll('input[name="frequency"]');
+            radios.forEach(r => { r.checked = r.value === user.notification_frequency; });
+        } catch {}
+    }
+    function setSelect(id, val) {
+        const el = document.getElementById(id);
+        for (const opt of el.options) { if (opt.value === val) { opt.selected = true; break; } }
+    }
+    loadProfile();
+
+    document.getElementById('profileForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn = document.querySelector('.btn-primary');
+        btn.disabled = true; btn.textContent = 'Saving…';
+
+        const msg = document.getElementById('message');
+        try {
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    location:              document.getElementById('location').value,
+                    domain:                document.getElementById('domain').value,
+                    experience:            document.getElementById('experience').value,
+                    notification_frequency: document.querySelector('input[name="frequency"]:checked').value,
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                msg.className = 'message success';
+                msg.textContent = data.message;
+                msg.style.display = 'block';
+                setTimeout(() => window.location.href = '/dashboard.html', 2500);
+            } else {
+                throw new Error(data.error || 'Update failed');
+            }
+        } catch (err) {
+            msg.className = 'message error';
+            msg.textContent = err.message;
+            msg.style.display = 'block';
+        } finally {
+            btn.disabled = false; btn.textContent = 'Save & Fetch New Jobs';
+        }
+    });
+    </script>
+</body>
+</html>

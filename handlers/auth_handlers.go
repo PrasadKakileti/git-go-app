@@ -2,18 +2,17 @@ package handlers
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"job-portal/models"
 	"net/http"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	var req models.SignupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -21,23 +20,18 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate required fields
 	if (req.Email == "" && req.Mobile == "") || req.Password == "" || req.Location == "" || req.Domain == "" || req.Experience == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "All fields are required"})
 		return
 	}
 
-	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to process password"})
 		return
 	}
-
-	// Generate verification code
-	verificationCode := generateVerificationCode()
 
 	user := &models.User{
 		Email:                 req.Email,
@@ -49,56 +43,48 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		NotificationFrequency: req.NotificationFrequency,
 		IsActive:              true,
 		IsVerified:            false,
-		VerificationCode:      verificationCode,
+		VerificationCode:      generateCode(),
+	}
+	if user.NotificationFrequency == "" {
+		user.NotificationFrequency = "daily"
 	}
 
 	if err := h.userRepo.CreateWithAuth(user); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Email or mobile already registered"})
 		return
 	}
 
-	// Send welcome email
 	go h.sendWelcomeEmail(user)
+	go h.triggerImmediateFetch(user) // fetch matching jobs right away, no 6h wait
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
-		"message": "Signup successful! Please login to continue.",
+		"message": "Signup successful! Job alerts are being fetched and will be emailed to you within 1 minute.",
 	})
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	
+
 	var req models.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"error":   "Invalid request",
-		})
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "error": "Invalid request"})
 		return
 	}
 
-	// Hardcoded admin login
-	if req.EmailOrMobile == "Test123@gmail.com" && req.Password == "Test@123" {
+	// Admin login: credentials come from environment, never hardcoded.
+	if h.cfg != nil && req.EmailOrMobile == h.cfg.AdminEmail && h.cfg.AdminPassword != "" && req.Password == h.cfg.AdminPassword {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
 			"message": "Login successful",
-			"token":   "admin-token",
+			"token":   generateSecureToken(),
 			"user": map[string]interface{}{
 				"id":       0,
-				"email":    "Test123@gmail.com",
-				"mobile":   "",
+				"email":    h.cfg.AdminEmail,
+				"role":     "admin",
 				"location": "Admin",
 				"domain":   "Admin",
 			},
@@ -106,55 +92,44 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user by email or mobile
 	user, err := h.userRepo.GetByEmailOrMobile(req.EmailOrMobile)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"error":   "Invalid credentials",
-		})
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "error": "Invalid credentials"})
 		return
 	}
 
-	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"error":   "Invalid credentials",
-		})
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "error": "Invalid credentials"})
 		return
 	}
 
-	// Generate session token (simple implementation)
-	token := generateToken(user.ID)
-
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"message": "Login successful",
-		"token":   token,
+		"token":   generateSecureToken(),
 		"user": map[string]interface{}{
-			"id":       user.ID,
-			"email":    user.Email,
-			"mobile":   user.Mobile,
-			"location": user.Location,
-			"domain":   user.Domain,
+			"id":         user.ID,
+			"email":      user.Email,
+			"mobile":     user.Mobile,
+			"location":   user.Location,
+			"domain":     user.Domain,
+			"experience": user.Experience,
 		},
 	})
 }
 
-func generateVerificationCode() string {
-	const digits = "0123456789"
-	b := make([]byte, 6)
+// generateSecureToken returns a cryptographically random 32-byte hex token.
+func generateSecureToken() string {
+	b := make([]byte, 32)
 	rand.Read(b)
-	for i := range b {
-		b[i] = digits[int(b[i])%len(digits)]
-	}
-	return string(b)
+	return hex.EncodeToString(b)
 }
 
-func generateToken(userID int) string {
-	return fmt.Sprintf("%d-%d", userID, time.Now().Unix())
+func generateCode() string {
+	b := make([]byte, 3) // 6 hex chars
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }
+

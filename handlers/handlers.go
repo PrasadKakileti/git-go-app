@@ -2,23 +2,37 @@ package handlers
 
 import (
 	"encoding/json"
+	"job-portal/config"
 	"job-portal/models"
 	"job-portal/repository"
 	"net/http"
 )
 
+// JobFetcher is the subset of services.JobService the handler needs.
+// Declared here to avoid an import cycle.
+type JobFetcher interface {
+	FetchAndStoreJobs(location, domain, experience string) error
+	FetchJobsAndNotify(user *models.User) error // Fetch jobs + immediately send email
+}
+
 type Handler struct {
 	userRepo     *repository.UserRepository
 	emailService EmailServiceInterface
+	jobFetcher   JobFetcher
+	cfg          *config.Config
 }
 
 func NewHandler(userRepo *repository.UserRepository) *Handler {
 	return &Handler{userRepo: userRepo}
 }
 
+func (h *Handler) SetEmailService(svc EmailServiceInterface) { h.emailService = svc }
+func (h *Handler) SetConfig(cfg *config.Config)              { h.cfg = cfg }
+func (h *Handler) SetJobFetcher(jf JobFetcher)               { h.jobFetcher = jf }
+
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	var req models.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -46,23 +60,23 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.userRepo.Create(user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to register user: " + err.Error()})
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to register: " + err.Error()})
 		return
 	}
 
-	// Send welcome email
 	go h.sendWelcomeEmail(user)
+	go h.triggerImmediateFetch(user)
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
-		"message": "Registration successful! Check your email for confirmation.",
+		"message": "Registration successful! Job alerts are being fetched and will be emailed within 1 minute.",
 		"user":    user,
 	})
 }
 
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	email := r.URL.Query().Get("email")
 	if email == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -91,8 +105,13 @@ func (h *Handler) sendWelcomeEmail(user *models.User) {
 	}
 }
 
-func (h *Handler) SetEmailService(emailService EmailServiceInterface) {
-	h.emailService = emailService
+// triggerImmediateFetch fetches jobs AND sends them as an email immediately.
+// New users get job notifications within seconds of signup, not waiting for the 1-hour scheduler.
+func (h *Handler) triggerImmediateFetch(user *models.User) {
+	if h.jobFetcher != nil {
+		// FetchJobsAndNotify does: fetch → store → email → mark as sent
+		h.jobFetcher.FetchJobsAndNotify(user)
+	}
 }
 
 type EmailServiceInterface interface {

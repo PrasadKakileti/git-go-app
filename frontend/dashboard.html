@@ -3,15 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JobHub - Dashboard</title>
+    <title>JobHub — Dashboard</title>
     <link rel="stylesheet" href="/css/dashboard.css">
+    <style>
+        /* Source platform badge */
+        .job-source-badge {
+            display: inline-block;
+            background: #ede9fe;
+            color: #5b21b6;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+            letter-spacing: .3px;
+            text-transform: uppercase;
+        }
+        /* Apply button */
+        .btn-apply {
+            display: inline-block;
+            background: #4f46e5;
+            color: #fff !important;
+            padding: 9px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background .2s;
+        }
+        .btn-apply:hover { background: #4338ca; }
+        .btn-apply.disabled {
+            background: #d1d5db;
+            color: #6b7280 !important;
+            cursor: not-allowed;
+        }
+        /* Refresh + Profile buttons */
+        .nav-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .btn-refresh {
+            background: #10b981;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s;
+        }
+        .btn-refresh:hover { background: #059669; }
+        .btn-refresh:disabled { background: #6ee7b7; cursor: not-allowed; }
+        .btn-profile {
+            background: transparent;
+            color: #4f46e5;
+            border: 1px solid #4f46e5;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-profile:hover { background: #f5f3ff; }
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #6b7280;
+            flex-wrap: wrap;
+        }
+        .stats-bar span { font-weight: 700; color: #1e1b4b; }
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e1b4b;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity .3s;
+            z-index: 999;
+            max-width: 320px;
+        }
+        .toast.show { opacity: 1; }
+        /* No jobs card */
+        .no-jobs {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+        .no-jobs h3 { color: #1e1b4b; margin-bottom: 8px; }
+        .no-jobs .hint { font-size: 13px; margin-top: 16px; }
+    </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
             <h1 class="logo">🎯 JobHub</h1>
-            <div class="nav-right">
+            <div class="nav-actions">
                 <span id="userEmail" class="user-email"></span>
+                <button id="refreshBtn" class="btn-refresh" onclick="refreshJobs()">⟳ Refresh Jobs</button>
+                <a href="/profile.html" class="btn-profile">My Profile</a>
                 <button onclick="logout()" class="btn-logout">Logout</button>
             </div>
         </div>
@@ -20,13 +117,19 @@
     <div class="container">
         <div class="header">
             <h2>Available Jobs</h2>
-            <p>Jobs matching your preferences</p>
+            <p>Real jobs from LinkedIn, Indeed &amp; Glassdoor — matched to your profile</p>
         </div>
 
-        <div id="loading" class="loading">Loading jobs...</div>
-        <div id="error" class="error" style="display:none;"></div>
+        <div id="statsBar" class="stats-bar" style="display:none">
+            Showing <span id="jobCount">0</span> jobs matching your preferences
+        </div>
+
+        <div id="loading" class="loading">Loading your jobs…</div>
+        <div id="error" class="error" style="display:none"></div>
         <div id="jobsContainer" class="jobs-container"></div>
     </div>
+
+    <div id="toast" class="toast"></div>
 
     <script src="/js/dashboard.js"></script>
 </body>
