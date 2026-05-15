@@ -8,6 +8,9 @@ var SupportedDomains = []string{
 	"Node.js",
 	"PLM Teamcenter",
 	"OPcenter",
+	"Data Engineer",
+	"SQL",
+	"PL/SQL",
 }
 
 // SupportedExperience maps display labels to the stored value.
